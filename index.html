@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width; initial-scale=1.0">
+        <title>Which part(s) of a moving train are going backwards with respect to the ground?</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <style>
+            h1 {
+                text-align: center;
+            }
+            p {
+                width: 50%;
+                margin: auto;
+            }
+            .canvas-wrapper {
+                position: relative;
+            }
+            #wheel {
+                width: 240px;
+                height: 240px;
+                position: absolute;
+                transform-origin: 50% 50%;
+            }
+            canvas {
+                position: absolute;
+                top: 0;
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>    
+        <h1>
+            Which part(s) of a moving train are going backwards with respect to the ground?<br>
+            <small>Answer to <a href="https://www.youtube.com/watch?v=HgCXdNhVC1Q">https://www.youtube.com/watch?v=HgCXdNhVC1Q</a><br>
+            <button id="run" class="btn btn-primary">Run again</button>
+        </h1>
+        <p>
+        Black line represents a rail.<br>
+        Red line represents a path travelled by a single point of a wheel at the part that touches the rail.<br>
+        Blue line represents a path travelled by a single point at the most outer edge of the wheel (the part that protects from derailing).<br>
+        At any given time part of the wheel that is below the line of the rail is going backwards with respect to the ground.<br>
+        <div class="canvas-wrapper">
+            <img id="wheel" src="wheel.png">
+            <canvas id="canvasRail"></canvas>
+            <canvas id="canvasContact"></canvas>
+            <canvas id="canvasEdge"></canvas>
+        </div>
+        <script type="text/javascript">
+            var runButton = document.getElementById('run'),
+                railCanvas = document.getElementById('canvasRail'),
+                railCtx = railCanvas.getContext('2d'),
+                contactCanvas = document.getElementById('canvasContact'),
+                contactCtx = contactCanvas.getContext('2d'),
+                edgeCanvas = document.getElementById('canvasEdge'),
+                edgeCtx = edgeCanvas.getContext('2d'),
+                wheel = document.getElementById('wheel'),
+                wheelDiameter = 240,
+                wheelInnerDiameter = 200,
+                canvasWidth = window.innerWidth,
+                canvasHeight = 400,
+                wheelCenter = canvasHeight - canvasHeight * 0.25 - wheelInnerDiameter / 2,
+                currentAngle = 0,
+                angleSpeed = Math.PI / 4,
+                innerPointX = Math.sin(currentAngle) * wheelInnerDiameter / 2,
+                innerPointY = Math.cos(currentAngle) * wheelInnerDiameter / 2,
+                outerPointX = Math.sin(currentAngle) * wheelDiameter / 2,
+                outerPointY = Math.cos(currentAngle) * wheelDiameter / 2,
+                lastFrameTime = null,
+                keepDrawing = false;
+
+            if (!window.requestAnimationFrame) {
+                window.requestAnimationFrame = ( function() {
+                    return window.webkitRequestAnimationFrame ||
+                    window.mozRequestAnimationFrame ||
+                    window.oRequestAnimationFrame ||
+                    window.msRequestAnimationFrame ||
+                    function(callback, element) {
+                        window.setTimeout( callback, 1000 / 60 );
+                    };
+                })();
+            }
+
+            runButton.addEventListener('click', animate);
+
+            animate();
+
+            function animate() {
+                runButton.disabled = 'disabled';
+                currentAngle = 0;
+                lastFrameTime = null;
+                innerPointX = Math.sin(currentAngle) * wheelInnerDiameter / 2;
+                innerPointY = Math.cos(currentAngle) * wheelInnerDiameter / 2;
+                outerPointX = Math.sin(currentAngle) * wheelDiameter / 2;
+                outerPointY = Math.cos(currentAngle) * wheelDiameter / 2;
+                railCanvas.width = contactCanvas.width = edgeCanvas.width = canvasWidth;
+                railCanvas.height = contactCanvas.height = edgeCanvas.height = canvasHeight;
+                wheel.style.left = canvasWidth - wheelDiameter + 'px';
+                wheel.style.top = canvasHeight - canvasHeight * 0.25 - (wheelDiameter + wheelInnerDiameter) / 2 + 'px';
+                contactCtx.strokeStyle = '#ff0000';
+                edgeCanvas.strokeStyle = '#0099ff';
+                drawRail();
+                keepDrawing = true;
+                requestAnimationFrame(drawFrame);
+            }
+            
+            function drawRail() {
+                railCtx.beginPath();
+                railCtx.moveTo(0, canvasHeight * 0.75);
+                railCtx.lineTo(canvasWidth, canvasHeight * 0.75);
+                railCtx.stroke();
+            }
+
+            function drawFrame() {
+                var now, frameTime, distance;
+                // Frame timing
+                if (lastFrameTime) {
+                    now = new Date().getTime();
+                    frameTime = now - lastFrameTime;
+                    lastFrameTime = now;
+                }
+                else {
+                    frameTime = 0;
+                    lastFrameTime = new Date().getTime();
+                }
+                // Angle and distance travelled between frames
+                currentAngle += (frameTime / 1000) * angleSpeed;
+                distance = currentAngle * wheelInnerDiameter / 2;
+                // Wheel drawing
+                wheel.style.left = canvasWidth - distance + 'px';
+                wheel.style.webkitTransform = 'rotate(' + (-currentAngle) + 'rad)';
+                wheel.style.transform = 'rotate(' + (-currentAngle) + 'rad)';
+                // Point of contact
+                contactCtx.beginPath();
+                contactCtx.moveTo(canvasWidth - innerPointX - distance + wheelInnerDiameter / 2 + 20, innerPointY + wheelCenter);
+                innerPointX = Math.sin(-currentAngle) * wheelInnerDiameter / 2;
+                innerPointY = Math.cos(-currentAngle) * wheelInnerDiameter / 2;
+                contactCtx.lineTo(canvasWidth - innerPointX - distance + wheelInnerDiameter / 2 + 20, innerPointY + wheelCenter);
+                contactCtx.stroke();
+                // Edge
+                edgeCtx.beginPath();
+                edgeCtx.moveTo(canvasWidth - outerPointX - distance + wheelDiameter / 2, outerPointY + wheelCenter);
+                outerPointX = Math.sin(-currentAngle) * wheelDiameter / 2;
+                outerPointY = Math.cos(-currentAngle) * wheelDiameter / 2;
+                edgeCtx.lineTo(canvasWidth - outerPointX - distance + wheelDiameter / 2, outerPointY + wheelCenter);
+                edgeCtx.stroke();
+                // Continue drawing
+                if (distance > canvasWidth) {
+                    keepDrawing = false;
+                }
+                if (keepDrawing) {
+                    requestAnimationFrame(drawFrame);
+                }
+                else {
+                    runButton.disabled = '';
+                }
+            }
+
+        </script>
+    </body>
+</html>
