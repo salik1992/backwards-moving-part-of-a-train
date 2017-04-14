@@ -103,7 +103,7 @@
                 wheel.style.left = canvasWidth - wheelDiameter + 'px';
                 wheel.style.top = canvasHeight - canvasHeight * 0.25 - (wheelDiameter + wheelInnerDiameter) / 2 + 'px';
                 contactCtx.strokeStyle = '#ff0000';
-                edgeCanvas.strokeStyle = '#0099ff';
+                edgeCtx.strokeStyle = '#0099ff';
                 drawRail();
                 keepDrawing = true;
                 requestAnimationFrame(drawFrame);
